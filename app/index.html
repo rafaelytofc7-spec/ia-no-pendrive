@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111418">
+<title>IA no Pendrive</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A4%96%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar" aria-label="Conversas">
+    <div class="side-top">
+      <button id="btnNovaSide" class="btn primary wide">+ Nova conversa</button>
+    </div>
+    <ul id="listaConversas"></ul>
+    <div class="side-bottom">
+      <button id="btnExportar" class="btn small">Exportar</button>
+      <label class="btn small">Importar<input id="inpImportar" type="file" accept=".json,application/json" hidden></label>
+      <button id="btnApagarTudo" class="btn small danger">Apagar tudo</button>
+    </div>
+  </aside>
+  <div id="sideOverlay"></div>
+
+  <div id="main">
+    <header id="topo">
+      <button id="btnMenu" class="icon" title="Conversas" aria-label="Abrir conversas">☰</button>
+      <div class="titulo">
+        <strong>IA no Pendrive</strong>
+        <button id="chipBackend" class="chip" title="Trocar motor de IA"><span class="dot"></span><span id="chipTexto">…</span></button>
+      </div>
+      <button id="btnNova" class="icon" title="Nova conversa" aria-label="Nova conversa">＋</button>
+      <button id="btnConfig" class="icon" title="Configurações" aria-label="Configurações">⚙</button>
+    </header>
+
+    <section id="mensagens" aria-live="polite"></section>
+
+    <form id="formEnvio" autocomplete="off">
+      <textarea id="entrada" rows="1" placeholder="Escreva sua mensagem…" enterkeyhint="send"></textarea>
+      <button id="btnEnviar" class="btn primary" type="submit" title="Enviar (Enter)">Enviar</button>
+      <button id="btnParar" class="btn danger" type="button" hidden>Parar</button>
+    </form>
+  </div>
+</div>
+
+<dialog id="dlgConfig">
+  <form method="dialog" id="formConfig" novalidate>
+    <div class="dlg-head">
+      <h2>Configurações</h2>
+      <button class="icon" value="fechar" aria-label="Fechar">✕</button>
+    </div>
+
+    <label class="campo">Motor de IA
+      <select id="cfgBackend">
+        <option value="local">💻 Servidor local (PC com o pendrive)</option>
+        <option value="navegador">📱 Modelo dentro do navegador (offline)</option>
+        <option value="hf">🤗 Hugging Face (internet)</option>
+        <option value="openai">🌐 Outra API compatível com OpenAI</option>
+      </select>
+    </label>
+
+    <fieldset data-backend="local">
+      <legend>Servidor local</legend>
+      <p class="dica">Use o <b>INICIAR</b> do seu sistema no pendrive. No celular, digite o endereço que aparece na janela do PC (ex.: http://192.168.0.10:8080).</p>
+      <label class="campo">Endereço do servidor
+        <input id="cfgLocalUrl" type="url" placeholder="http://localhost:8080">
+      </label>
+      <button type="button" id="btnTestarLocal" class="btn small">Testar conexão</button>
+      <span id="resTestarLocal" class="dica"></span>
+    </fieldset>
+
+    <fieldset data-backend="navegador">
+      <legend>Modelo dentro do navegador</legend>
+      <p class="dica">Roda 100% no aparelho, sem internet. Escolha um arquivo <b>.gguf pequeno</b> (até ~1,5 GB; recomendado: <code>Qwen3.5-0.8B-Q4_K_M.gguf</code> da pasta <code>modelos</code> do pendrive).</p>
+      <label class="campo">Arquivo do modelo (.gguf)
+        <input id="cfgArquivo" type="file">
+      </label>
+      <p class="dica">ou baixe da internet (fica salvo no navegador):</p>
+      <label class="campo">Link do .gguf
+        <input id="cfgWlUrl" type="url" placeholder="https://huggingface.co/.../modelo.gguf">
+      </label>
+      <div class="linha">
+        <label class="campo">Contexto (tokens)
+          <input id="cfgWlCtx" type="number" min="512" max="32768" step="512">
+        </label>
+        <label class="check"><input id="cfgWlGpu" type="checkbox"> Usar GPU (WebGPU) se disponível</label>
+      </div>
+      <button type="button" id="btnCarregarModelo" class="btn primary small">Carregar modelo</button>
+      <div id="wlStatus" class="dica"></div>
+      <progress id="wlProgresso" max="100" value="0" hidden></progress>
+    </fieldset>
+
+    <fieldset data-backend="hf">
+      <legend>Hugging Face</legend>
+      <p class="dica">Crie um token em huggingface.co → Settings → Access Tokens (permissão “Make calls to Inference Providers”). O token fica salvo só neste navegador.</p>
+      <label class="campo">Token (hf_…)
+        <input id="cfgHfToken" type="password" placeholder="hf_xxxxxxxxx" autocomplete="off">
+      </label>
+      <label class="campo">Modelo
+        <input id="cfgHfModel" list="listaHfModelos" placeholder="google/gemma-4-26B-A4B-it">
+        <datalist id="listaHfModelos"></datalist>
+      </label>
+      <button type="button" id="btnListarHf" class="btn small">Listar modelos disponíveis</button>
+      <span id="resListarHf" class="dica"></span>
+    </fieldset>
+
+    <fieldset data-backend="openai">
+      <legend>API compatível com OpenAI</legend>
+      <p class="dica">Ex.: OpenRouter (https://openrouter.ai/api), Groq (https://api.groq.com/openai), Ollama (http://localhost:11434), LM Studio (http://localhost:1234).</p>
+      <label class="campo">Endereço base
+        <input id="cfgOaUrl" type="url" placeholder="https://openrouter.ai/api">
+      </label>
+      <label class="campo">Chave da API (se precisar)
+        <input id="cfgOaKey" type="password" autocomplete="off">
+      </label>
+      <label class="campo">Modelo
+        <input id="cfgOaModel" list="listaOaModelos" placeholder="nome-do-modelo">
+        <datalist id="listaOaModelos"></datalist>
+      </label>
+      <button type="button" id="btnListarOa" class="btn small">Listar modelos</button>
+      <span id="resListarOa" class="dica"></span>
+    </fieldset>
+
+    <fieldset>
+      <legend>Comportamento</legend>
+      <label class="campo">Instrução de sistema (personalidade)
+        <textarea id="cfgSistema" rows="3"></textarea>
+      </label>
+      <div class="linha">
+        <label class="campo">Temperatura
+          <input id="cfgTemp" type="number" min="0" max="2" step="0.1">
+        </label>
+        <label class="campo">Máx. de tokens na resposta
+          <input id="cfgMaxTok" type="number" min="16" max="32768" step="16">
+        </label>
+      </div>
+      <label class="check"><input id="cfgPensar" type="checkbox"> Modo raciocínio (o modelo “pensa” antes de responder — bem mais lento; usa no mínimo 4096 tokens)</label>
+    </fieldset>
+
+    <div class="dlg-foot">
+      <span class="dica">IA no Pendrive · código aberto (MIT)</span>
+      <button class="btn primary" value="ok">Salvar</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="vendor/marked.umd.js"></script>
+<script src="vendor/purify.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

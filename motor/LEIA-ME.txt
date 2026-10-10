@@ -1,0 +1,20 @@
+MOTOR (llama.cpp) — IA no Pendrive
+==================================
+
+Aqui ficam os programas que rodam a IA no computador. São os binários
+oficiais do projeto llama.cpp (licença MIT, ver LICENSE-llama.cpp.txt):
+https://github.com/ggml-org/llama.cpp/releases
+
+Versão do llama.cpp: b11541
+
+  windows/    Windows 10/11 64 bits (x64). Usa a placa de vídeo pelo Vulkan
+              se houver; senão usa só o processador (CPU).
+  linux/      Linux x86_64 (Ubuntu 22.04+ ou equivalente: glibc 2.35, libssl3).
+              Vulkan opcional (precisa de libvulkan1 instalada).
+  mac-arm64/  Mac com chip Apple (M1, M2, M3, M4…). Usa a GPU (Metal).
+  mac-intel/  Mac com processador Intel.
+
+Você não precisa abrir nada aqui: use INICIAR-WINDOWS.bat,
+iniciar-linux.sh ou iniciar-mac.command na pasta principal.
+
+Para atualizar: ferramentas/preparar-pacote.sh latest

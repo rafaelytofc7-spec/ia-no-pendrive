@@ -1,0 +1,17 @@
+MODELOS — IA no Pendrive
+========================
+
+Coloque aqui os arquivos de modelo (.gguf). O jeito fácil é rodar
+baixar-modelos.bat (Windows), baixar-modelos.sh (Linux) ou
+baixar-modelos-mac.command (Mac), que baixam do Hugging Face:
+
+  Qwen3.5-4B-Q4_K_M.gguf    2,74 GB  PC (o mais inteligente; ~6 GB de RAM livre)
+  Qwen3.5-2B-Q4_K_M.gguf    1,28 GB  PC fraco / celular bom
+  Qwen3.5-0.8B-Q4_K_M.gguf  0,53 GB  celular e "modelo dentro do navegador"
+
+Origem: https://huggingface.co/unsloth (modelos Qwen3.5 da Alibaba,
+licença Apache 2.0).
+
+Qualquer outro .gguf também funciona (Llama, Gemma, Mistral, Phi…).
+Dica: prefira quantização Q4_K_M. No navegador/celular, até ~1,5 GB.
+O INICIAR mostra uma lista quando houver mais de um modelo aqui.
