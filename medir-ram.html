@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<title>Medir RAM · IA no Pendrive</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    line-height: 1.45;
+    padding: 1.25rem 1rem 2.5rem;
+  }
+  main { max-width: 28rem; margin: 0 auto; }
+  h1 { font-size: 1.35rem; margin: 0 0 0.35rem; font-weight: 700; }
+  .sub { color: #94a3b8; font-size: 0.95rem; margin: 0 0 1.25rem; }
+  .card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 1rem;
+    padding: 1rem 1.1rem;
+    margin-bottom: 0.85rem;
+  }
+  .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: #94a3b8; }
+  .big { font-size: 2rem; font-weight: 800; margin: 0.2rem 0; }
+  .muted { color: #94a3b8; font-size: 0.9rem; }
+  .ok { color: #4ade80; }
+  .warn { color: #fbbf24; }
+  ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+  li { margin: 0.25rem 0; }
+  a { color: #7dd3fc; }
+  button {
+    width: 100%;
+    margin-top: 0.75rem;
+    padding: 0.85rem 1rem;
+    border: 0;
+    border-radius: 0.75rem;
+    background: #22c55e;
+    color: #052e16;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  button:active { transform: scale(0.98); }
+  .apps a { display: inline-block; margin: 0.15rem 0.5rem 0.15rem 0; }
+  footer { margin-top: 1.25rem; font-size: 0.8rem; color: #64748b; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Quanto de RAM este celular tem?</h1>
+  <p class="sub">Abre no próprio celular. A página lê o que o navegador reporta e indica qual modelo de IA offline cabe bem.</p>
+
+  <div class="card" id="resultado">
+    <div class="label">Medindo…</div>
+    <div class="big" id="ram">—</div>
+    <p class="muted" id="detalhe"></p>
+  </div>
+
+  <div class="card" id="recomendacao">
+    <div class="label">Modelo indicado</div>
+    <p id="modelo" class="muted">Aguarde…</p>
+    <ul id="lista"></ul>
+  </div>
+
+  <div class="card apps">
+    <div class="label">Apps pra usar depois</div>
+    <p class="muted" style="margin:0.35rem 0 0.5rem">Baixa uma vez com internet; depois funciona offline.</p>
+    <a href="https://play.google.com/store/apps/details?id=com.google.ai.edge.gallery">Google AI Edge Gallery</a>
+    <a href="https://play.google.com/store/apps/details?id=com.pocketpalai">PocketPal AI</a>
+  </div>
+
+  <button type="button" id="btn">Medir de novo</button>
+
+  <footer>
+    Regra prática: o arquivo do modelo deve ficar em cerca de 50–60% da RAM do aparelho.
+    No Android, o Chrome às vezes arredonda (ex.: 8 GB vira “até 8”). Confira também em Ajustes → Sobre o telefone.
+    <br><a href="app/">Voltar ao chat IA no Pendrive</a>
+  </footer>
+</main>
+<script>
+(function () {
+  var modelos = [
+    { min: 0, max: 3.5, titulo: "Celular bem limitado (até ~3 GB)", itens: [
+      "Prefira só modelos minúsculos, tipo Gemma 3 1B (~0,8 GB).",
+      "Respostas simples; evite modelos maiores."
+    ]},
+    { min: 3.5, max: 5.5, titulo: "Faixa de 4 GB", itens: [
+      "Gemma 3 1B (~0,8 GB) ou Qwen3 1.7B (~1,1–1,3 GB).",
+      "No AI Edge Gallery / PocketPal, comece pelo menor e teste."
+    ]},
+    { min: 5.5, max: 7.5, titulo: "Faixa de 6 GB", itens: [
+      "Gemma 4 E2B (~2,6 GB) ou Llama 3.2 3B Q4 (~2 GB).",
+      "Boa qualidade sem estourar a memória."
+    ]},
+    { min: 7.5, max: 99, titulo: "Faixa de 8 GB ou mais", itens: [
+      "Gemma 4 E4B (~3,6 GB) ou Qwen3 4B Q4 (~2,5 GB).",
+      "Melhor resposta em português; ainda cabe com folga."
+    ]}
+  ];
+
+  function faixa(gb) {
+    for (var i = 0; i < modelos.length; i++) {
+      if (gb >= modelos[i].min && gb < modelos[i].max) return modelos[i];
+    }
+    return modelos[modelos.length - 1];
+  }
+
+  function medir() {
+    var ramEl = document.getElementById("ram");
+    var det = document.getElementById("detalhe");
+    var modelo = document.getElementById("modelo");
+    var lista = document.getElementById("lista");
+    lista.innerHTML = "";
+
+    var dm = navigator.deviceMemory; // GiB, Chrome/Android
+    var cores = navigator.hardwareConcurrency || null;
+
+    if (typeof dm === "number" && dm > 0) {
+      ramEl.textContent = dm + " GB";
+      ramEl.className = "big ok";
+      det.textContent = "Valor do navegador (navigator.deviceMemory)." +
+        (cores ? " CPU com " + cores + " núcleos lógicos." : "");
+      var f = faixa(dm);
+      modelo.textContent = f.titulo;
+      modelo.className = "ok";
+      f.itens.forEach(function (t) {
+        var li = document.createElement("li");
+        li.textContent = t;
+        lista.appendChild(li);
+      });
+    } else {
+      ramEl.textContent = "Não disponível";
+      ramEl.className = "big warn";
+      det.textContent = "Este navegador não expõe a RAM. Abra no Chrome do Android, ou olhe em Ajustes → Sobre o telefone.";
+      modelo.textContent = "Sem leitura automática";
+      modelo.className = "warn";
+      ["Celular de ~4 GB: Gemma 3 1B ou Qwen3 1.7B.",
+       "Celular de ~8 GB: Gemma 4 E4B ou Qwen3 4B."].forEach(function (t) {
+        var li = document.createElement("li");
+        li.textContent = t;
+        lista.appendChild(li);
+      });
+    }
+  }
+
+  document.getElementById("btn").addEventListener("click", medir);
+  medir();
+})();
+</script>
+</body>
+</html>
